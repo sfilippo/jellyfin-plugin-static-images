@@ -24,7 +24,7 @@ This version targets Jellyfin server 10.11 and .NET 9. It builds against
 Add this repository in **Dashboard > Plugins > Repositories**:
 
 ```text
-https://raw.githubusercontent.com/sfilippo/jellyfin-plugin-static-images/main/manifest.json
+https://raw.githubusercontent.com/sfilippo/jellyfin-plugin-static-images/refs/heads/main/manifest.json
 ```
 
 Then open the plugin catalog, install **Static Images**, and restart Jellyfin.
