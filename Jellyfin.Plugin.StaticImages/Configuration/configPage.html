@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Static Images</title>
+</head>
+<body>
+    <div id="StaticImagesConfigPage"
+         data-role="page"
+         class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button">
+        <div data-role="content">
+            <div class="content-primary">
+                <form id="StaticImagesConfigForm">
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="ImageRootDirectory">
+                            Image Root Directory
+                        </label>
+                        <input id="ImageRootDirectory"
+                               name="ImageRootDirectory"
+                               type="text"
+                               is="emby-input" />
+                        <div class="fieldDescription">
+                            Directory containing Primary, Backdrop, Logo, and Thumb folders.
+                            The default is /custom-jellyfin-images.
+                        </div>
+                    </div>
+                    <div>
+                        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <script type="text/javascript">
+            var StaticImagesConfig = {
+                pluginUniqueId: '75f71985-9517-49cb-b9e4-41cc8e3fc186'
+            };
+
+            document.querySelector('#StaticImagesConfigPage')
+                .addEventListener('pageshow', function () {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(StaticImagesConfig.pluginUniqueId).then(function (config) {
+                        document.querySelector('#ImageRootDirectory').value = config.ImageRootDirectory;
+                        Dashboard.hideLoadingMsg();
+                    });
+                });
+
+            document.querySelector('#StaticImagesConfigForm')
+                .addEventListener('submit', function (event) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(StaticImagesConfig.pluginUniqueId).then(function (config) {
+                        config.ImageRootDirectory =
+                            document.querySelector('#ImageRootDirectory').value.trim();
+                        ApiClient.updatePluginConfiguration(
+                            StaticImagesConfig.pluginUniqueId,
+                            config
+                        ).then(function (result) {
+                            Dashboard.processPluginConfigurationUpdateResult(result);
+                        });
+                    });
+
+                    event.preventDefault();
+                    return false;
+                });
+        </script>
+    </div>
+</body>
+</html>

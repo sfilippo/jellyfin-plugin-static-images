@@ -1,0 +1,113 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out release tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "9.0.x"
+
+      - name: Read release metadata
+        id: metadata
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          $build = Get-Content build.yaml -Raw
+          $targetAbi = [regex]::Match($build, '(?m)^targetAbi:\s*"([^"]+)"').Groups[1].Value
+          if (-not $targetAbi) {
+              throw "Unable to read targetAbi from build.yaml"
+          }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "target_abi=$targetAbi" >> $env:GITHUB_OUTPUT
+          "asset_name=static-images_$version.zip" >> $env:GITHUB_OUTPUT
+
+      - name: Build plugin
+        run: dotnet build Jellyfin.Plugin.StaticImages.sln --configuration Release
+
+      - name: Package plugin
+        shell: pwsh
+        run: |
+          $asset = "${{ steps.metadata.outputs.asset_name }}"
+          New-Item -ItemType Directory -Path artifacts | Out-Null
+          Compress-Archive `
+            -Path Jellyfin.Plugin.StaticImages/bin/Release/net9.0/Jellyfin.Plugin.StaticImages.dll `
+            -DestinationPath "artifacts/$asset"
+
+      - name: Calculate checksum
+        id: checksum
+        shell: pwsh
+        run: |
+          $asset = "artifacts/${{ steps.metadata.outputs.asset_name }}"
+          $checksum = (Get-FileHash $asset -Algorithm MD5).Hash.ToLowerInvariant()
+          "md5=$checksum" >> $env:GITHUB_OUTPUT
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            "artifacts/${{ steps.metadata.outputs.asset_name }}" \
+            --title "Static Images ${{ steps.metadata.outputs.version }}" \
+            --notes "Initial release for Jellyfin 10.11."
+
+      - name: Update Jellyfin catalog
+        shell: pwsh
+        run: |
+          git checkout main
+
+          $existingVersions = @()
+          if (Test-Path manifest.json) {
+              $catalog = @(Get-Content manifest.json -Raw | ConvertFrom-Json)
+              $existingPlugin = $catalog | Where-Object {
+                  $_.guid -eq "75f71985-9517-49cb-b9e4-41cc8e3fc186"
+              } | Select-Object -First 1
+              if ($existingPlugin) {
+                  $existingVersions = @($existingPlugin.versions | Where-Object {
+                      $_.version -ne "${{ steps.metadata.outputs.version }}"
+                  })
+              }
+          }
+
+          $release = [ordered]@{
+              version = "${{ steps.metadata.outputs.version }}"
+              changelog = "Initial release"
+              targetAbi = "${{ steps.metadata.outputs.target_abi }}"
+              sourceUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.metadata.outputs.asset_name }}"
+              checksum = "${{ steps.checksum.outputs.md5 }}"
+              timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
+          }
+
+          $entry = [ordered]@{
+              guid = "75f71985-9517-49cb-b9e4-41cc8e3fc186"
+              name = "Static Images"
+              description = "Provides Primary, Backdrop, Logo, and Thumb images from a configurable read-only directory, preferring IMDb IDs and falling back to TMDb IDs."
+              overview = "Use provider-ID-named local files as Jellyfin images"
+              owner = "sfilippo"
+              category = "Metadata"
+              versions = @($release) + $existingVersions
+          }
+
+          @($entry) | ConvertTo-Json -Depth 10 | Set-Content manifest.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "Update plugin catalog for ${{ github.ref_name }}"
+          git push origin main

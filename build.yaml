@@ -1,0 +1,15 @@
+---
+name: "Static Images"
+guid: "75f71985-9517-49cb-b9e4-41cc8e3fc186"
+version: "1.0.0.0"
+targetAbi: "10.11.0.0"
+framework: "net9.0"
+overview: "Use provider-ID-named local files as Jellyfin images"
+description: >
+  Provides Primary, Backdrop, Logo, and Thumb images from a configurable
+  read-only directory, preferring IMDb IDs and falling back to TMDb IDs.
+category: "Metadata"
+owner: "Jellyfin.Plugin.StaticImages"
+artifacts:
+- "Jellyfin.Plugin.StaticImages.dll"
+changelog: "Initial release"
