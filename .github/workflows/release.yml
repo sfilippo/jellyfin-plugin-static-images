@@ -30,12 +30,17 @@ jobs:
           $version = "${{ github.ref_name }}".TrimStart("v")
           $build = Get-Content build.yaml -Raw
           $targetAbi = [regex]::Match($build, '(?m)^targetAbi:\s*"([^"]+)"').Groups[1].Value
+          $changelog = [regex]::Match($build, '(?m)^changelog:\s*"([^"]+)"').Groups[1].Value
           if (-not $targetAbi) {
               throw "Unable to read targetAbi from build.yaml"
+          }
+          if (-not $changelog) {
+              throw "Unable to read changelog from build.yaml"
           }
 
           "version=$version" >> $env:GITHUB_OUTPUT
           "target_abi=$targetAbi" >> $env:GITHUB_OUTPUT
+          "changelog=$changelog" >> $env:GITHUB_OUTPUT
           "asset_name=static-images_$version.zip" >> $env:GITHUB_OUTPUT
 
       - name: Build plugin
@@ -65,7 +70,7 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             "artifacts/${{ steps.metadata.outputs.asset_name }}" \
             --title "Static Images ${{ steps.metadata.outputs.version }}" \
-            --notes "Initial release for Jellyfin 10.11."
+            --notes "${{ steps.metadata.outputs.changelog }}"
 
       - name: Update Jellyfin catalog
         shell: pwsh
@@ -87,7 +92,7 @@ jobs:
 
           $release = [ordered]@{
               version = "${{ steps.metadata.outputs.version }}"
-              changelog = "Initial release"
+              changelog = "${{ steps.metadata.outputs.changelog }}"
               targetAbi = "${{ steps.metadata.outputs.target_abi }}"
               sourceUrl = "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/${{ steps.metadata.outputs.asset_name }}"
               checksum = "${{ steps.checksum.outputs.md5 }}"

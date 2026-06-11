@@ -14,8 +14,8 @@ Jellyfin continues with its other configured image providers.
 
 ## Compatibility
 
-This version targets Jellyfin server 10.11 and .NET 9. It builds against
-`Jellyfin.Controller` and `Jellyfin.Model` 10.11.11.
+This version targets Jellyfin server 10.11 and .NET 9. Release `1.0.0.1`
+builds against `Jellyfin.Controller` and `Jellyfin.Model` 10.11.8.
 
 ## Installation
 

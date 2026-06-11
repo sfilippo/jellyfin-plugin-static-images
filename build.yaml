@@ -1,7 +1,7 @@
 ---
 name: "Static Images"
 guid: "75f71985-9517-49cb-b9e4-41cc8e3fc186"
-version: "1.0.0.0"
+version: "1.0.0.1"
 targetAbi: "10.11.0.0"
 framework: "net9.0"
 overview: "Use provider-ID-named local files as Jellyfin images"
@@ -12,4 +12,4 @@ category: "Metadata"
 owner: "Jellyfin.Plugin.StaticImages"
 artifacts:
 - "Jellyfin.Plugin.StaticImages.dll"
-changelog: "Initial release"
+changelog: "Build against Jellyfin 10.11.8 shared assemblies for patch-level compatibility."
