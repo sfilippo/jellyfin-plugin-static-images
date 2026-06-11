@@ -104,7 +104,7 @@ jobs:
               versions = @($release) + $existingVersions
           }
 
-          @($entry) | ConvertTo-Json -Depth 10 | Set-Content manifest.json
+          ConvertTo-Json -InputObject @($entry) -Depth 10 | Set-Content manifest.json
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
